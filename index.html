@@ -128,7 +128,7 @@
 
         <section id="video-section" class="mb-10 text-center">
             <div class="w-full bg-gray-900 rounded-2xl overflow-hidden shadow-2xl inline-block" style="aspect-ratio: 16 / 9; max-width: 100%;">
-                <iframe class="w-full h-full" src="https://www.youtube.com/embed/MAC8x0-7_ws" title="Chamada para hangout 1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                <iframe class="w-full h-full" src="https://www.youtube.com/embed/FRfr862jmQk" title="Chamada para hangout" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
             </div>
             <button class="start-chat-btn mt-10 px-8 py-4 bg-[#D46A25] text-white text-xl font-bold rounded-full shadow-lg hover:bg-[#B3591E] transition-all transform hover:scale-105">
                 QUERO PARTICIPAR DO HANGOUT GRATUITO →
@@ -283,7 +283,7 @@
     <script type="module">
         document.addEventListener('DOMContentLoaded', async () => {
             const firebaseConfig = {
-                apiKey: "AIzaSyC077IEDyDW8wGBBhsTnjMHkQuZ5FFDODs",
+                apiKey: "AIzaSyC6CSfCH7z1IUP2Dxhvp95ah8HDw6GZics",
                 authDomain: "candeia-c861c.firebaseapp.com",
                 projectId: "candeia-c861c",
                 storageBucket: "candeia-c861c.appspot.com",
@@ -296,10 +296,11 @@
             try {
                 const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
                 const { getFirestore, collection, addDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-                const { getAnalytics } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js');
+                const { getAuth, signInAnonymously } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
                 
                 const app = initializeApp(firebaseConfig);
-                const analytics = getAnalytics(app);
+                const auth = getAuth(app);
+                await signInAnonymously(auth);
                 db = getFirestore(app);
 
                 window.saveLeadToFirebase = async (leadData) => {
@@ -555,7 +556,7 @@
                 **PARTE 2 (Para o PDF):** O texto completo e detalhado da solução. **Formate-o de maneira clara e organizada**, com um título principal (#), subtítulos (##), parágrafos curtos e, onde aplicável, listas de itens e citações bíblicas. Evite blocos de texto muito longos e densos.`;
 
                 const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-                const apiKey = ""; 
+                const apiKey = "AIzaSyC6CSfCH7z1IUP2Dxhvp95ah8HDw6GZics"; 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 try {
