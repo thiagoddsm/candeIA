@@ -282,6 +282,38 @@
 
     <script type="module">
         document.addEventListener('DOMContentLoaded', async () => {
+            const firebaseConfig = {
+                apiKey: "AIzaSyC6CSfCH7z1IUP2Dxhvp95ah8HDw6GZics",
+                authDomain: "candeia-c861c.firebaseapp.com",
+                projectId: "candeia-c861c",
+                storageBucket: "candeia-c861c.appspot.com",
+                messagingSenderId: "140124299912",
+                appId: "1:140124299912:web:f6f6af6758257a89a2b53d",
+                measurementId: "G-KT4PV2GGH2"
+            };
+
+            let db;
+            try {
+                const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+                const { getFirestore, collection, addDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+                const { getAuth, signInAnonymously } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
+                
+                const app = initializeApp(firebaseConfig);
+                const auth = getAuth(app);
+                await signInAnonymously(auth);
+                db = getFirestore(app);
+
+                window.saveLeadToFirebase = async (leadData) => {
+                    try {
+                        const docRef = await addDoc(collection(db, "leads-hangout-ia"), { ...leadData, timestamp: serverTimestamp() });
+                        console.log("Lead salvo com o ID: ", docRef.id);
+                    } catch (e) { console.error("Erro ao salvar o lead: ", e); }
+                };
+            } catch (error) {
+                console.error("Falha ao inicializar o Firebase.", error);
+                window.saveLeadToFirebase = (leadData) => console.log("Firebase não configurado. Dados:", leadData);
+            }
+
             const { jsPDF } = window.jspdf;
             const chatMessages = document.getElementById('chat-messages');
             const chatForm = document.getElementById('chat-form');
