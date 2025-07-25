@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangout: Inteligência Artificial para Igrejas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:wght@700&display=swap" rel="stylesheet">
+    <!-- 
+        Chosen Palette: Calm Harmony (adapted to CandeIA visual identity)
+        Application Structure Plan: A single-page application designed for high conversion. The structure is: 1) A benefit-driven hero section with a clear headline, sub-headline, and video. 2) A strong Call-to-Action (CTA) button. 3) Social proof with a subscriber counter. 4) A "What you will learn" section to build value. 5) A "Who is this for" section to create relevance. 6) The final CTA which triggers the conversational chat, our unique value proposition for sign-up. This structure follows conversion-rate optimization (CRO) best practices.
+        Visualization & Content Choices: The core of the application is the chat interface. Info: Conversational sign-up flow. Goal: Guide user, capture lead, demonstrate AI value. Viz/Presentation Method: A custom-built chat interface using styled HTML divs. Interaction: Users interact via text input and quick-reply buttons. The "Outros" option now dynamically enables text input. Justification: This method is highly engaging and directly demonstrates the "AI conversation" theme. Library/Method: Vanilla JavaScript manages the entire conversation state and flow. Tailwind CSS is used for all styling. The idea generation is powered by a live fetch call to the Gemini API with strict biblical alignment constraints, with the final deliverable being a client-side generated PDF via jsPDF.
+        CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8; /* Light cream background */
+            background-image: url('https://www.transparenttextures.com/patterns/soft-wallpaper.png'), radial-gradient(ellipse at top, #fdfbf8, #f4f1ec);
+        }
+        .font-lora {
+            font-family: 'Lora', serif;
+        }
+        .chat-container {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            background: #ffffff;
+        }
+        .chat-messages {
+            scroll-behavior: smooth;
+        }
+        .message-candeia {
+            background-color: #F1F1F1; /* Light grey for CandeIA */
+            color: #333333;
+        }
+        .message-user {
+            background-color: #FFEEDB; /* Light orange for user */
+            color: #8C4D16;
+        }
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            background-color: #A3A3A3;
+            border-radius: 50%;
+            display: inline-block;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+        .prose h3 {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #D46A25; /* Orange for titles */
+            margin-bottom: 0.5rem;
+        }
+        .prose ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .prose li {
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        .prose li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #D46A25;
+            font-weight: bold;
+        }
+        .pdf-link {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.75rem 1.5rem;
+            background-color: #D46A25; /* Main orange color */
+            color: white;
+            border-radius: 9999px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .pdf-link:hover {
+            background-color: #B3591E; /* Darker orange */
+        }
+        .calendar-button {
+            display: inline-block;
+            margin: 0.25rem;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+            text-align: center;
+            border: 1px solid transparent;
+        }
+        .calendar-button.google { background-color: #4285F4; color: white; }
+        .calendar-button.google:hover { background-color: #3367D6; }
+        .calendar-button.apple { background-color: #000000; color: white; }
+        .calendar-button.apple:hover { background-color: #333333; }
+        .error-message { color: #DC2626; font-size: 0.875rem; margin-top: 0.25rem; }
+        
+        .fade-in-section {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .fade-in-section.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto max-w-4xl p-4 md:p-8">
+        
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-lora font-bold text-[#333333] mb-4 leading-tight">A nova revolução tecnológica já começou. Sua igreja está pronta?</h1>
+            <p class="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">Descubra como líderes de igreja estão usando Inteligência Artificial com sabedoria para otimizar a gestão, aprofundar o discipulado e ampliar o alcance do Evangelho.</p>
+        </header>
+
+        <section id="video-section" class="mb-10 text-center">
+            <div class="w-full bg-gray-900 rounded-2xl overflow-hidden shadow-2xl inline-block" style="aspect-ratio: 16 / 9; max-width: 100%;">
+                <iframe class="w-full h-full" src="https://www.youtube.com/embed/FRfr862jmQk" title="Chamada para hangout" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            </div>
+            <button class="start-chat-btn mt-10 px-8 py-4 bg-[#D46A25] text-white text-xl font-bold rounded-full shadow-lg hover:bg-[#B3591E] transition-all transform hover:scale-105">
+                QUERO PARTICIPAR DO HANGOUT GRATUITO →
+            </button>
+            <p class="text-gray-500 text-sm mt-2">Vagas limitadas. Garanta a sua em 60 segundos.</p>
+        </section>
+
+        <section id="social-proof" class="text-center my-20 fade-in-section">
+            <p class="text-lg text-gray-700">Junte-se a mais de <span id="subscriber-count" class="font-bold text-[#D46A25]">157</span> pastores e líderes que já garantiram sua vaga.</p>
+        </section>
+        
+        <section class="my-24 fade-in-section">
+            <h2 class="text-3xl font-lora font-bold text-center text-[#333333] mb-12">A sua rotina de ministério se parece com isso?</h2>
+            <div class="grid md:grid-cols-3 gap-8 text-center">
+                <div>
+                    <div class="bg-white p-4 rounded-full w-20 h-20 mx-auto flex items-center justify-center shadow-lg mb-4">
+                        <svg class="w-10 h-10 text-[#D46A25]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">Semanas Corridas</h3>
+                    <p class="text-gray-600">A preparação de sermões e a gestão de eventos consomem um tempo precioso que poderia ser dedicado às pessoas.</p>
+                </div>
+                <div>
+                    <div class="bg-white p-4 rounded-full w-20 h-20 mx-auto flex items-center justify-center shadow-lg mb-4">
+                        <svg class="w-10 h-10 text-[#D46A25]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2V7a2 2 0 012-2h2m8-4H5a2 2 0 00-2 2v10a2 2 0 002 2h11l4 4V5a2 2 0 00-2-2z"></path></svg>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">Comunicação Fragmentada</h3>
+                    <p class="text-gray-600">Avisos se perdem em grupos, voluntários ficam desalinhados e a comunicação com a igreja parece um grande desafio.</p>
+                </div>
+                <div>
+                    <div class="bg-white p-4 rounded-full w-20 h-20 mx-auto flex items-center justify-center shadow-lg mb-4">
+                        <svg class="w-10 h-10 text-[#D46A25]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">Falta de Inovação</h3>
+                    <p class="text-gray-600">Dificuldade em criar conteúdos novos e relevantes para alcançar e engajar as novas gerações no ambiente digital.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="my-24 bg-white rounded-2xl p-8 md:p-12 shadow-xl fade-in-section">
+            <h2 class="text-3xl font-lora font-bold text-center text-[#333333] mb-6">E se a tecnologia pudesse trabalhar para o seu ministério?</h2>
+            <p class="text-center text-gray-600 max-w-3xl mx-auto">A Inteligência Artificial não é sobre substituir o pastoreio, mas sobre potencializá-lo. É sobre usar as ferramentas que Deus nos permite ter hoje para sermos melhores mordomos do nosso tempo e dos dons que Ele nos confiou, assim como na Parábola dos Talentos (Mateus 25:14-30). Neste hangout, vamos desmistificar a IA e mostrar, de forma prática e biblicamente responsável, como ela pode se tornar uma poderosa aliada para a sua igreja.</p>
+        </section>
+
+        <section id="what-to-learn" class="my-24 fade-in-section">
+            <h2 class="text-3xl font-lora font-bold text-center text-[#333333] mb-12">O Mapa do Nosso Encontro: Do Problema à Solução Prática</h2>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-white p-8 rounded-xl shadow-lg transition-transform transform hover:-translate-y-1">
+                    <h3 class="font-bold text-lg mb-2 text-[#D46A25]">01. Sermões e Estudos em Minutos, Não em Dias</h3>
+                    <p>Aprenda a usar a IA para pesquisar, gerar esboços e encontrar ilustrações relevantes, aprofundando suas mensagens e economizando horas de preparo.</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg transition-transform transform hover:-translate-y-1">
+                    <h3 class="font-bold text-lg mb-2 text-[#D46A25]">02. Comunicação que Conecta</h3>
+                    <p>Descubra como automatizar avisos, criar posts para redes sociais e organizar a comunicação dos seus ministérios de forma eficiente.</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg transition-transform transform hover:-translate-y-1">
+                    <h3 class="font-bold text-lg mb-2 text-[#D46A25]">03. Gestão de Eventos e Voluntários Simplificada</h3>
+                    <p>Veja como a IA pode ajudar a planejar eventos, criar escalas de voluntários e otimizar a logística da sua igreja.</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg transition-transform transform hover:-translate-y-1">
+                    <h3 class="font-bold text-lg mb-2 text-[#D46A25]">04. Sabedoria e Discernimento</h3>
+                    <p>Um guia prático sobre os limites, os cuidados éticos e os princípios bíblicos para usar a tecnologia de forma que glorifique a Deus.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="who-is-it-for" class="my-24 fade-in-section">
+            <h2 class="text-3xl font-lora font-bold text-center text-[#333333] mb-12">Para Quem é Este Hangout?</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div>
+                    <div class="bg-white p-4 rounded-full w-24 h-24 mx-auto flex items-center justify-center shadow-lg mb-2">
+                        <svg class="w-12 h-12 text-[#D46A25]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    </div>
+                    <h3 class="font-semibold">Pastores e Líderes</h3>
+                </div>
+                 <div>
+                    <div class="bg-white p-4 rounded-full w-24 h-24 mx-auto flex items-center justify-center shadow-lg mb-2">
+                         <svg class="w-12 h-12 text-[#D46A25]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    </div>
+                    <h3 class="font-semibold">Líderes de Ministério</h3>
+                </div>
+                 <div>
+                    <div class="bg-white p-4 rounded-full w-24 h-24 mx-auto flex items-center justify-center shadow-lg mb-2">
+                        <svg class="w-12 h-12 text-[#D46A25]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21v-2a6 6 0 00-12 0v2"></path></svg>
+                    </div>
+                    <h3 class="font-semibold">Equipes de Mídia</h3>
+                </div>
+                 <div>
+                    <div class="bg-white p-4 rounded-full w-24 h-24 mx-auto flex items-center justify-center shadow-lg mb-2">
+                        <svg class="w-12 h-12 text-[#D46A25]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                    </div>
+                    <h3 class="font-semibold">Voluntários e Membros</h3>
+                </div>
+            </div>
+        </section>
+
+        <section class="my-24 bg-white rounded-2xl p-8 md:p-12 shadow-xl fade-in-section flex flex-col md:flex-row items-center gap-8">
+            <img src="https://placehold.co/150x150/f0f0f0/333333?text=Sua+Foto" alt="Foto de Lucas Porto" class="w-36 h-36 rounded-full object-cover">
+            <div class="text-center md:text-left">
+                <h2 class="text-3xl font-lora font-bold text-[#333333] mb-4">Seu Guia Nesta Jornada</h2>
+                <h3 class="text-xl font-bold text-gray-800">Lucas Porto</h3>
+                <p class="text-gray-600 mt-2">Apaixonado por teologia e tecnologia, Lucas tem se dedicado a encontrar pontes entre a inovação e o serviço no Reino de Deus. Sua missão é equipar pastores e líderes com ferramentas práticas para que possam focar no que realmente importa: pastorear e discipular vidas.</p>
+            </div>
+        </section>
+
+        <section class="my-24 fade-in-section text-center">
+             <h2 class="text-3xl font-lora font-bold text-[#333333] mb-4">Está na hora de transformar a forma como você lidera.</h2>
+             <p class="text-lg text-gray-600 mb-8">Não perca a oportunidade de estar à frente e aprender a usar as ferramentas que estão moldando o futuro.</p>
+             <button class="start-chat-btn px-8 py-4 bg-[#D46A25] text-white text-xl font-bold rounded-full shadow-lg hover:bg-[#B3591E] transition-all transform hover:scale-105">
+                QUERO TRANSFORMAR MEU MINISTÉRIO →
+            </button>
+        </section>
+
+        <main id="chat-section" class="w-full max-w-2xl mx-auto hidden">
+            <h2 class="text-3xl font-lora font-bold text-center text-[#333333] mb-6">Inscrição Rápida com a LuzIA</h2>
+            <div class="chat-container rounded-2xl overflow-hidden">
+                <div class="p-4 bg-white border-b border-gray-200 flex items-center space-x-3">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-lg text-[#333333]">LuzIA</h2>
+                        <p class="text-sm text-green-600">Online</p>
+                    </div>
+                </div>
+
+                <div id="chat-messages" class="p-6 h-96 overflow-y-auto chat-messages space-y-4">
+                </div>
+
+                <div id="chat-input-area" class="p-4 bg-white border-t border-gray-200">
+                    <form id="chat-form" class="flex items-center space-x-3">
+                        <input type="text" id="user-input" placeholder="Digite sua mensagem..." class="w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#D46A25] transition" autocomplete="off" disabled>
+                        <button type="submit" class="bg-[#D46A25] text-white rounded-full p-3 hover:bg-[#B3591E] transition-colors focus:outline-none focus:ring-2 focus:ring-[#D46A25] focus:ring-offset-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                            </svg>
+                        </button>
+                    </form>
+                    <div id="quick-replies" class="mt-3 flex flex-wrap gap-2"></div>
+                    <div id="validation-message" class="mt-2 text-center"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer id="footer" class="text-center mt-12">
+            <p class="text-gray-500">&copy; 2025 - Um projeto para abençoar sua comunidade.</p>
+        </footer>
+
+    </div>
+
+    <script type="module">
+        document.addEventListener('DOMContentLoaded', async () => {
+            const firebaseConfig = {
+                apiKey: "AIzaSyC077IEDyDW8wGBBhsTnjMHkQuZ5FFDODs",
+                authDomain: "candeia-c861c.firebaseapp.com",
+                projectId: "candeia-c861c",
+                storageBucket: "candeia-c861c.appspot.com",
+                messagingSenderId: "140124299912",
+                appId: "1:140124299912:web:f6f6af6758257a89a2b53d",
+                measurementId: "G-KT4PV2GGH2"
+            };
+
+            let db;
+            try {
+                const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+                const { getFirestore, collection, addDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+                const { getAnalytics } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js');
+                
+                const app = initializeApp(firebaseConfig);
+                const analytics = getAnalytics(app);
+                db = getFirestore(app);
+
+                window.saveLeadToFirebase = async (leadData) => {
+                    try {
+                        const docRef = await addDoc(collection(db, "leads-hangout-ia"), { ...leadData, timestamp: serverTimestamp() });
+                        console.log("Lead salvo com o ID: ", docRef.id);
+                    } catch (e) { console.error("Erro ao salvar o lead: ", e); }
+                };
+            } catch (error) {
+                console.error("Falha ao inicializar o Firebase.", error);
+                window.saveLeadToFirebase = (leadData) => console.log("Firebase não configurado. Dados:", leadData);
+            }
+
+            const { jsPDF } = window.jspdf;
+            const chatMessages = document.getElementById('chat-messages');
+            const chatForm = document.getElementById('chat-form');
+            const userInput = document.getElementById('user-input');
+            const quickRepliesContainer = document.getElementById('quick-replies');
+            const chatSection = document.getElementById('chat-section');
+            const validationDiv = document.getElementById('validation-message');
+            const startChatBtns = document.querySelectorAll('.start-chat-btn');
+
+            let currentStageIndex = -1;
+            const userData = {};
+
+            const conversationFlow = [
+                { message: "Que bom te ver por aqui! Sou a LuzIA, sua guia virtual. Estou aqui para te inscrever em nosso encontro sobre Ferramentas de IA para Líderes e Igrejas, que acontecerá no dia <b>11 de Agosto, às 20h</b>, na <b>Igreja Batista da Manhã</b> e também com <b>transmissão online</b>.", delay: 1000 },
+                { message: "Para começarmos, como posso te chamar?", input: 'text', dataKey: 'name', validation: 'required' },
+                { message: (data) => `Prazer, ${data.name}! Para qual e-mail devo enviar o link de acesso exclusivo do nosso encontro?`, input: 'email', dataKey: 'email', validation: 'email' },
+                { message: "Ótimo! E qual o seu número de WhatsApp com DDD? Usaremos para enviar um lembrete no dia do evento.", input: 'tel', dataKey: 'whatsapp', validation: 'phone' },
+                { message: "Obrigado! Para que nosso encontro seja ainda mais relevante, qual sua principal área de atuação na igreja?", input: 'buttons', options: ['Pastor(a)', 'Líder de Ministério', 'Voluntário(a)', 'Membro', 'Outros'], dataKey: 'role' },
+                { message: "Entendido. E qual o maior desafio que você enfrenta nessa área hoje?", input: 'text', dataKey: 'challenge', validation: 'required' },
+                { message: (data) => `Compreendo. E para finalizar, qual é o principal obstáculo que te impede de superar o desafio de "${data.challenge}"? (Ex: falta de voluntários, orçamento, conhecimento técnico, etc.)`, input: 'text', dataKey: 'obstacle', validation: 'required' },
+                { message: (data) => `Perfeito, ${data.name}! Sua inscrição está confirmada. O link será enviado para o seu e-mail. Para te ajudar a não esquecer, que tal adicionar ao seu calendário?`, action: showCalendarButtonsAndSaveLead },
+                { message: "Excelente. Com base no seu desafio, vou usar a IA para gerar agora uma solução personalizada para você. Um momento...", delay: 2000, action: generateIdeas }
+            ];
+
+            function addMessage(text, sender = 'candeia') {
+                const messageElement = document.createElement('div');
+                messageElement.className = `w-fit max-w-xs md:max-w-md p-4 rounded-2xl break-words ${sender === 'user' ? 'message-user self-end rounded-br-lg' : 'message-candeia self-start rounded-bl-lg'}`;
+                const proseContainer = document.createElement('div');
+                proseContainer.className = 'prose prose-sm max-w-none';
+                proseContainer.innerHTML = text;
+                messageElement.appendChild(proseContainer);
+                chatMessages.appendChild(messageElement);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            function showTypingIndicator() {
+                const typingElement = document.createElement('div');
+                typingElement.id = 'typing-indicator';
+                typingElement.className = 'message-candeia self-start p-3 rounded-2xl';
+                typingElement.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
+                chatMessages.appendChild(typingElement);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                return typingElement;
+            }
+
+            function removeTypingIndicator(indicator) {
+                if (indicator && indicator.parentNode) {
+                    chatMessages.removeChild(indicator);
+                }
+            }
+
+            async function advanceConversation(userInputText = null) {
+                const currentStep = conversationFlow[currentStageIndex];
+                if (userInputText && currentStep && currentStep.dataKey) {
+                    if (currentStep.validation && !validateInput(userInputText, currentStep.validation)) {
+                        return; 
+                    }
+                    userData[currentStep.dataKey] = userInputText;
+                }
+
+                currentStageIndex++;
+                const nextStep = conversationFlow[currentStageIndex];
+
+                if (!nextStep) {
+                    userInput.disabled = true;
+                    return;
+                }
+
+                const typingIndicator = showTypingIndicator();
+                await new Promise(resolve => setTimeout(resolve, nextStep.delay || 1200));
+                removeTypingIndicator(typingIndicator);
+
+                if (nextStep.message) {
+                    const messageText = typeof nextStep.message === 'function' ? nextStep.message(userData) : nextStep.message;
+                    addMessage(messageText);
+                }
+
+                if (nextStep.action) await nextStep.action();
+                if (nextStep.input) setupInput(nextStep);
+                else if (currentStageIndex < conversationFlow.length - 1) await advanceConversation();
+                else userInput.disabled = true;
+            }
+            
+            function showValidationMessage(message, isError = true) {
+                validationDiv.innerHTML = `<p class="${isError ? 'error-message' : 'text-green-600'}">${message}</p>`;
+                setTimeout(() => validationDiv.innerHTML = '', 3000);
+            }
+
+            function validateInput(value, type) {
+                let isValid = true;
+                let message = '';
+                if (type === 'required' && !value.trim()) {
+                    isValid = false;
+                    message = 'Este campo é obrigatório.';
+                } else if (type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                    isValid = false;
+                    message = 'Por favor, insira um e-mail válido.';
+                } else if (type === 'phone' && !/^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/.test(value)) {
+                    isValid = false;
+                    message = 'Formato de telefone inválido. Use (XX) XXXXX-XXXX.';
+                }
+                if (!isValid) {
+                    showValidationMessage(message);
+                    setupInput(conversationFlow[currentStageIndex]);
+                }
+                return isValid;
+            }
+
+            function setupInput(step) {
+                quickRepliesContainer.innerHTML = '';
+                userInput.style.display = 'flex';
+                chatForm.querySelector('button').style.display = 'flex';
+                userInput.disabled = true;
+
+                switch (step.input) {
+                    case 'text':
+                    case 'email':
+                    case 'tel':
+                        userInput.type = step.input;
+                        userInput.placeholder = "Sua resposta...";
+                        userInput.disabled = false;
+                        userInput.focus();
+                        break;
+                    case 'buttons':
+                        userInput.placeholder = "Escolha uma das opções acima";
+                        step.options.forEach(option => {
+                            const button = document.createElement('button');
+                            button.className = 'px-4 py-2 bg-white border border-[#D46A25] text-[#D46A25] rounded-full hover:bg-[#FFF8F5] transition';
+                            button.textContent = option;
+                            button.onclick = () => handleQuickReply(option);
+                            quickRepliesContainer.appendChild(button);
+                        });
+                        break;
+                }
+            }
+
+            function handleUserInput(e) {
+                e.preventDefault();
+                const text = userInput.value.trim();
+                if (!text) return;
+
+                addMessage(text, 'user');
+                userInput.value = '';
+                userInput.disabled = true;
+                
+                advanceConversation(text);
+            }
+
+            async function handleQuickReply(text) {
+                addMessage(text, 'user');
+                quickRepliesContainer.innerHTML = '';
+
+                if (text === 'Outros') {
+                    const typingIndicator = showTypingIndicator();
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                    removeTypingIndicator(typingIndicator);
+                    addMessage("Entendido. Por favor, digite sua área de atuação abaixo.");
+                    setupInput({ input: 'text', placeholder: 'Sua atuação...' });
+                } else {
+                    advanceConversation(text);
+                }
+            }
+            
+            function createCalendarLink(type) {
+                const eventDate = new Date('2025-08-11T20:00:00-03:00');
+                const event = {
+                    title: 'Hangout: IA para Igrejas',
+                    startDate: eventDate,
+                    description: 'Descubra como a Inteligência Artificial pode transformar sua igreja. Presencial na Igreja Batista da Manhã e online (link de acesso será enviado por e-mail).',
+                    location: 'Igreja Batista da Manhã & Online'
+                };
+                
+                const pad = (n) => n.toString().padStart(2, '0');
+                const formatTimeLocal = (date) => `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
+                const startTime = formatTimeLocal(event.startDate);
+                const endTime = formatTimeLocal(new Date(event.startDate.getTime() + 60 * 60 * 1000));
+
+                if (type === 'google') {
+                    return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${startTime}/${endTime}&details=${encodeURIComponent(event.description)}&location=${encodeURIComponent(event.location)}&ctz=America/Sao_Paulo`;
+                } else { 
+                    const startTimeICS = event.startDate.toISOString().replace(/-|:|\.\d\d\d/g, '');
+                    const endTimeICS = new Date(event.startDate.getTime() + 60 * 60 * 1000).toISOString().replace(/-|:|\.\d\d\d/g, '');
+                    let icsBody = [
+                        'BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT',
+                        `URL:${document.URL}`, `DTSTART:${startTimeICS}`, `DTEND:${endTimeICS}`,
+                        `SUMMARY:${event.title}`, `DESCRIPTION:${event.description}`, `LOCATION:${event.location}`,
+                        'END:VEVENT', 'END:VCALENDAR'
+                    ].join('\r\n');
+                    return `data:text/calendar;charset=utf8,${encodeURIComponent(icsBody)}`;
+                }
+            }
+
+            async function showCalendarButtonsAndSaveLead() {
+                await window.saveLeadToFirebase(userData);
+                userInput.style.display = 'none';
+                chatForm.querySelector('button').style.display = 'none';
+
+                const googleLink = createCalendarLink('google');
+                const appleLink = createCalendarLink('apple');
+                
+                const calendarButtons = document.createElement('div');
+                calendarButtons.className = 'flex flex-wrap justify-center gap-2';
+                
+                const linkGoogle = document.createElement('a');
+                linkGoogle.href = googleLink;
+                linkGoogle.target = '_blank';
+                linkGoogle.className = 'calendar-button google';
+                linkGoogle.textContent = 'Adicionar ao Google Agenda';
+                
+                const linkApple = document.createElement('a');
+                linkApple.href = appleLink;
+                linkApple.download = 'evento.ics';
+                linkApple.className = 'calendar-button apple';
+                linkApple.textContent = 'Adicionar ao Calendário Apple';
+
+                calendarButtons.appendChild(linkGoogle);
+                calendarButtons.appendChild(linkApple);
+                
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message-candeia self-start rounded-bl-lg p-4';
+                messageElement.appendChild(calendarButtons);
+                chatMessages.appendChild(messageElement);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                setTimeout(() => advanceConversation(), 1000);
+            }
+
+            async function generateIdeas() {
+                const typingIndicator = showTypingIndicator();
+                const prompt = `Aja como um especialista em inovação para igrejas com profundo conhecimento teológico. Dirija-se diretamente à pessoa pelo nome e cargo dela. O nome é "${userData.name}" e o cargo é "${userData.role}". Comece a resposta de forma pessoal e informal, por exemplo: "${userData.role} ${userData.name}, compreendo profundamente o desafio de...".
+
+                O desafio principal é "${userData.challenge}" e o obstáculo é "${userData.obstacle}". Com base nisso, crie UMA ÚNICA solução prática e detalhada.
+
+                **Regra Inviolável:** A solução DEVE estar em total acordo com os princípios da Bíblia Sagrada. Se possível, inclua embasamento bíblico com versículos relevantes. A solução não pode, sob nenhuma circunstância, contradizer as Escrituras.
+
+                **Formato da Resposta:** Sua resposta DEVE ser dividida em duas partes, separadas por '---PDF---'.
+
+                **PARTE 1 (Para o Chat):** Um texto formatado em Markdown com um título (###), uma introdução curta e pessoal (usando o nome e cargo), e uma lista de tópicos principais (* Tópico).
+
+                **PARTE 2 (Para o PDF):** O texto completo e detalhado da solução. **Formate-o de maneira clara e organizada**, com um título principal (#), subtítulos (##), parágrafos curtos e, onde aplicável, listas de itens e citações bíblicas. Evite blocos de texto muito longos e densos.`;
+
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0].text) {
+                        const fullText = result.candidates[0].content.parts[0].text;
+                        const parts = fullText.split('---PDF---');
+                        
+                        if (parts.length < 2) {
+                            addMessage("Peço desculpas, tive um problema para formatar a solução em PDF. Mas aqui está a sugestão completa:<br><br>" + fullText.replace(/\n/g, '<br>'));
+                        } else {
+                            const chatContent = parts[0].trim().replace(/### (.*)/g, '<h3>$1</h3>').replace(/\* (.*)/g, '<li>$1</li>').replace(/\n/g, '<br>');
+                            const pdfMarkdown = parts[1].trim();
+                            addMessage(chatContent);
+
+                            const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+                            const lines = pdfMarkdown.split('\n');
+                            let cursorY = 60; // Increased top margin
+                            const pageMargin = 60; // Increased side margins
+                            const pageWidth = doc.internal.pageSize.getWidth() - (pageMargin * 2);
+
+                            lines.forEach(line => {
+                                if (line.trim() === '') { cursorY += 10; return; }
+                                if (cursorY > doc.internal.pageSize.getHeight() - 60) { doc.addPage(); cursorY = pageMargin; }
+
+                                if (line.startsWith('# ')) {
+                                    doc.setFont('helvetica', 'bold'); doc.setFontSize(18);
+                                    const text = doc.splitTextToSize(line.substring(2), pageWidth);
+                                    doc.text(text, pageMargin, cursorY);
+                                    cursorY += (text.length * 18) + 12;
+                                } else if (line.startsWith('## ')) {
+                                    doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
+                                    const text = doc.splitTextToSize(line.substring(3), pageWidth);
+                                    doc.text(text, pageMargin, cursorY);
+                                    cursorY += (text.length * 14) + 10;
+                                } else {
+                                    doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+                                    const text = doc.splitTextToSize(line, pageWidth);
+                                    doc.text(text, pageMargin, cursorY);
+                                    cursorY += (text.length * 11) + 4;
+                                }
+                            });
+
+                            const pageCount = doc.internal.getNumberOfPages();
+                            for(let i = 1; i <= pageCount; i++) {
+                                doc.setPage(i);
+                                doc.setFontSize(9); doc.setTextColor(150);
+                                doc.text(`Solução gerada pela LuzIA para ${userData.name}`, pageMargin, doc.internal.pageSize.getHeight() - 20);
+                                doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.getWidth() - pageMargin - 30, doc.internal.pageSize.getHeight() - 20);
+                            }
+
+                            const pdfDataUri = doc.output('datauristring');
+                            const pdfLinkMessage = `O conteúdo completo e detalhado já está disponível para você em PDF. Clique para baixar!<br><a href="${pdfDataUri}" download="solucao_personalizada_luzia.pdf" class="pdf-link">Baixar PDF da Solução</a>`;
+                            await new Promise(resolve => setTimeout(resolve, 1200));
+                            addMessage(pdfLinkMessage);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error fetching ideas:", error);
+                    addMessage("Desculpe, não consegui gerar a solução agora. Houve um problema de conexão. Por favor, tente mais tarde.");
+                } finally {
+                    removeTypingIndicator(typingIndicator);
+                    const finalStep = conversationFlow[conversationFlow.length - 1];
+                    if (finalStep) {
+                        const typingIndicatorFinal = showTypingIndicator();
+                        await new Promise(resolve => setTimeout(resolve, finalStep.delay || 1200));
+                        removeTypingIndicator(typingIndicatorFinal);
+                        addMessage(finalStep.message);
+                    }
+                }
+            }
+
+            chatForm.addEventListener('submit', handleUserInput);
+
+            startChatBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    chatSection.style.display = 'block';
+                    chatSection.scrollIntoView({ behavior: 'smooth' });
+                    if (currentStageIndex === -1) {
+                       advanceConversation();
+                    }
+                });
+            });
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.fade-in-section').forEach(section => {
+                observer.observe(section);
+            });
+        });
+    </script>
+</body>
+</html>
