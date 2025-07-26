@@ -10,12 +10,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:wght@700&display=swap" rel="stylesheet">
-    <!-- 
-        Chosen Palette: Calm Harmony (adapted to CandeIA visual identity)
-        Application Structure Plan: A single-page application designed for high conversion. The structure is: 1) A benefit-driven hero section with a clear headline, sub-headline, and video. 2) A strong Call-to-Action (CTA) button. 3) Social proof with a subscriber counter. 4) A "What you will learn" section to build value. 5) A "Who is this for" section to create relevance. 6) The final CTA which triggers the conversational chat, our unique value proposition for sign-up. This structure follows conversion-rate optimization (CRO) best practices.
-        Visualization & Content Choices: The core of the application is the chat interface. Info: Conversational sign-up flow. Goal: Guide user, capture lead, demonstrate AI value. Viz/Presentation Method: A custom-built chat interface using styled HTML divs. Interaction: Users interact via text input and quick-reply buttons. The "Outros" option now dynamically enables text input. Justification: This method is highly engaging and directly demonstrates the "AI conversation" theme. Library/Method: Vanilla JavaScript manages the entire conversation state and flow. Tailwind CSS is used for all styling. The idea generation is powered by a live fetch call to the Gemini API with strict biblical alignment constraints, with the final deliverable being a client-side generated PDF via jsPDF.
-        CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
-    -->
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -237,7 +231,7 @@
              <h2 class="text-3xl font-lora font-bold text-[#333333] mb-4">Está na hora de transformar a forma como você lidera.</h2>
              <p class="text-lg text-gray-600 mb-8">Não perca a oportunidade de estar à frente e aprender a usar as ferramentas que estão moldando o futuro.</p>
              <button class="start-chat-btn px-8 py-4 bg-[#D46A25] text-white text-xl font-bold rounded-full shadow-lg hover:bg-[#B3591E] transition-all transform hover:scale-105">
-                QUERO TRANSFORMAR MEU MINISTÉRIO →
+                 QUERO TRANSFORMAR MEU MINISTÉRIO →
             </button>
         </section>
 
@@ -275,16 +269,15 @@
         </main>
 
         <footer id="footer" class="text-center mt-12">
-            <p class="text-gray-500">&copy; 2025 - Um projeto para abençoar sua comunidade.</p>
+            <p class="text-gray-500">© 2025 - Um projeto para abençoar sua comunidade.</p>
         </footer>
 
     </div>
 
     <script type="module">
         document.addEventListener('DOMContentLoaded', async () => {
-            const firebaseConfig = {
-                apiKey: "AIzaSyC6CSfCH7z1IUP2Dxhvp95ah8HDw6GZics",
-                authDomain: "candeia-c861c.firebaseapp.com",
+            // // // const firebaseConfig = {
+                apiKey: "AIzaSyC6CSfCH7z1IUP2Dxhvp95ah8HDw6GZics", // authDomain: "candeia-c861c.firebaseapp.com",
                 projectId: "candeia-c861c",
                 storageBucket: "candeia-c861c.appspot.com",
                 messagingSenderId: "140124299912",
@@ -306,13 +299,39 @@
                 window.saveLeadToFirebase = async (leadData) => {
                     try {
                         const docRef = await addDoc(collection(db, "leads-hangout-ia"), { ...leadData, timestamp: serverTimestamp() });
-                        console.log("Lead salvo com o ID: ", docRef.id);
-                    } catch (e) { console.error("Erro ao salvar o lead: ", e); }
+                        console.log("Lead salvo no Firebase com o ID: ", docRef.id);
+                    } catch (e) { console.error("Erro ao salvar o lead no Firebase: ", e); }
                 };
             } catch (error) {
                 console.error("Falha ao inicializar o Firebase.", error);
                 window.saveLeadToFirebase = (leadData) => console.log("Firebase não configurado. Dados:", leadData);
             }
+            
+            // async function sendDataToGoogleSheet(leadData) {
+                // const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxuvRLxvuwBBk4XEDxUlsWCoRQay06sHS2AThe35pttIPfSjh7iCeF8SBOFXpUfBJr9/exec'; 
+                
+                try {
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'cors', // Necessário para requisições entre domínios diferentes
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(leadData)
+                    });
+
+                    const result = await response.json();
+                    if(result.status === "success") {
+                         console.log("Lead enviado para Google Sheets com sucesso!", result.message);
+                    } else {
+                        throw new Error(result.message);
+                    }
+                } catch (error) {
+                    console.error('Erro ao enviar dados para o Google Sheets:', error);
+                    // Opcional: Adicionar uma mensagem de erro no chat para o usuário
+                }
+            }
+
 
             const { jsPDF } = window.jspdf;
             const chatMessages = document.getElementById('chat-messages');
@@ -335,7 +354,7 @@
                 { message: "Entendido. E qual o maior desafio que você enfrenta nessa área hoje?", input: 'text', dataKey: 'challenge', validation: 'required' },
                 { message: (data) => `Compreendo. E para finalizar, qual é o principal obstáculo que te impede de superar o desafio de "${data.challenge}"? (Ex: falta de voluntários, orçamento, conhecimento técnico, etc.)`, input: 'text', dataKey: 'obstacle', validation: 'required' },
                 { message: (data) => `Perfeito, ${data.name}! Sua inscrição está confirmada. O link será enviado para o seu e-mail. Para te ajudar a não esquecer, que tal adicionar ao seu calendário?`, action: showCalendarButtonsAndSaveLead },
-                { message: "Excelente. Com base no seu desafio, vou usar a IA para gerar agora uma solução personalizada para você. Um momento...", delay: 2000, action: generateIdeas }
+                { message: "Excelente! Enquanto você decide, já estou preparando um conteúdo especial para você com base no seu desafio. Um momento...", delay: 2000, action: generateIdeas, isFinalMessage: true }
             ];
 
             function addMessage(text, sender = 'candeia') {
@@ -393,7 +412,7 @@
 
                 if (nextStep.action) await nextStep.action();
                 if (nextStep.input) setupInput(nextStep);
-                else if (currentStageIndex < conversationFlow.length - 1) await advanceConversation();
+                else if (currentStageIndex < conversationFlow.length - 1 && !nextStep.isFinalMessage) await advanceConversation();
                 else userInput.disabled = true;
             }
             
@@ -487,18 +506,16 @@
                 };
                 
                 const pad = (n) => n.toString().padStart(2, '0');
-                const formatTimeLocal = (date) => `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
-                const startTime = formatTimeLocal(event.startDate);
-                const endTime = formatTimeLocal(new Date(event.startDate.getTime() + 60 * 60 * 1000));
+                const formatTimeUTC = (date) => `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}00Z`;
+                const startTime = formatTimeUTC(event.startDate);
+                const endTime = formatTimeUTC(new Date(event.startDate.getTime() + 60 * 60 * 1000));
 
                 if (type === 'google') {
-                    return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${startTime}/${endTime}&details=${encodeURIComponent(event.description)}&location=${encodeURIComponent(event.location)}&ctz=America/Sao_Paulo`;
+                    return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${startTime}/${endTime}&details=${encodeURIComponent(event.description)}&location=${encodeURIComponent(event.location)}`;
                 } else { 
-                    const startTimeICS = event.startDate.toISOString().replace(/-|:|\.\d\d\d/g, '');
-                    const endTimeICS = new Date(event.startDate.getTime() + 60 * 60 * 1000).toISOString().replace(/-|:|\.\d\d\d/g, '');
                     let icsBody = [
                         'BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT',
-                        `URL:${document.URL}`, `DTSTART:${startTimeICS}`, `DTEND:${endTimeICS}`,
+                        `URL:${document.URL}`, `DTSTART:${startTime}`, `DTEND:${endTime}`,
                         `SUMMARY:${event.title}`, `DESCRIPTION:${event.description}`, `LOCATION:${event.location}`,
                         'END:VEVENT', 'END:VCALENDAR'
                     ].join('\r\n');
@@ -507,7 +524,9 @@
             }
 
             async function showCalendarButtonsAndSaveLead() {
-                await window.saveLeadToFirebase(userData);
+                // await sendDataToGoogleSheet(userData); // Primeiro envia para o Google Sheets
+                await window.saveLeadToFirebase(userData); // Depois (ou em paralelo) para o Firebase
+                
                 userInput.style.display = 'none';
                 chatForm.querySelector('button').style.display = 'none';
 
@@ -525,7 +544,7 @@
                 
                 const linkApple = document.createElement('a');
                 linkApple.href = appleLink;
-                linkApple.download = 'evento.ics';
+                linkApple.download = 'evento-hangout-ia.ics';
                 linkApple.className = 'calendar-button apple';
                 linkApple.textContent = 'Adicionar ao Calendário Apple';
 
@@ -537,8 +556,6 @@
                 messageElement.appendChild(calendarButtons);
                 chatMessages.appendChild(messageElement);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
-
-                setTimeout(() => advanceConversation(), 1000);
             }
 
             async function generateIdeas() {
@@ -556,8 +573,7 @@
                 **PARTE 2 (Para o PDF):** O texto completo e detalhado da solução. **Formate-o de maneira clara e organizada**, com um título principal (#), subtítulos (##), parágrafos curtos e, onde aplicável, listas de itens e citações bíblicas. Evite blocos de texto muito longos e densos.`;
 
                 const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-                const apiKey = "AIzaSyC6CSfCH7z1IUP2Dxhvp95ah8HDw6GZics"; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                // const apiKey = "AIzaSyC6CSfCH7z1IUP2Dxhvp95ah8HDw6GZics"; // const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
                 try {
                     const response = await fetch(apiUrl, {
@@ -628,14 +644,7 @@
                     addMessage("Desculpe, não consegui gerar a solução agora. Houve um problema de conexão. Por favor, tente mais tarde.");
                 } finally {
                     removeTypingIndicator(typingIndicator);
-                    const finalStep = conversationFlow[conversationFlow.length - 1];
-                    if (finalStep) {
-                        const typingIndicatorFinal = showTypingIndicator();
-                        await new Promise(resolve => setTimeout(resolve, finalStep.delay || 1200));
-                        removeTypingIndicator(typingIndicatorFinal);
-                        addMessage(finalStep.message);
-                    }
-                }
+                    // }
             }
 
             chatForm.addEventListener('submit', handleUserInput);
