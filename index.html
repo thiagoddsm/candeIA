@@ -275,403 +275,406 @@
     </div>
 
     <script type="module">
-        document.addEventListener('DOMContentLoaded', async () => {
-            // // // const firebaseConfig = {
-                apiKey: "AIzaSyC6CSfCH7z1IUP2Dxhvp95ah8HDw6GZics",
-                authDomain: "candeia-c861c.firebaseapp.com",
-                projectId: "candeia-c861c",
-                storageBucket: "candeia-c861c.appspot.com",
-                messagingSenderId: "140124299912",
-                appId: "1:140124299912:web:f6f6af6758257a89a2b53d",
-                measurementId: "G-KT4PV2GGH2"
-            };
+    document.addEventListener('DOMContentLoaded', async () => {
+        // ERRO 1 CORRIGIDO
+        const firebaseConfig = {
+            apiKey: "SUA_API_KEY_DO_FIREBASE_AQUI", // SUBSTITUA PELA SUA CHAVE
+            authDomain: "candeia-c861c.firebaseapp.com",
+            projectId: "candeia-c861c",
+            storageBucket: "candeia-c861c.appspot.com",
+            messagingSenderId: "140124299912",
+            appId: "1:140124299912:web:f6f6af6758257a89a2b53d",
+            measurementId: "G-KT4PV2GGH2"
+        };
 
-            let db;
-            try {
-                const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
-                const { getFirestore, collection, addDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-                const { getAuth, signInAnonymously } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
-                
-                const app = initializeApp(firebaseConfig);
-                const auth = getAuth(app);
-                await signInAnonymously(auth);
-                db = getFirestore(app);
-
-                window.saveLeadToFirebase = async (leadData) => {
-                    try {
-                        const docRef = await addDoc(collection(db, "leads-hangout-ia"), { ...leadData, timestamp: serverTimestamp() });
-                        console.log("Lead salvo no Firebase com o ID: ", docRef.id);
-                    } catch (e) { console.error("Erro ao salvar o lead no Firebase: ", e); }
-                };
-            } catch (error) {
-                console.error("Falha ao inicializar o Firebase.", error);
-                window.saveLeadToFirebase = (leadData) => console.log("Firebase não configurado. Dados:", leadData);
-            }
+        let db;
+        try {
+            const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+            const { getFirestore, collection, addDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+            const { getAuth, signInAnonymously } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
             
-            // async function sendDataToGoogleSheet(leadData) {
-                // const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxuvRLxvuwBBk4XEDxUlsWCoRQay06sHS2AThe35pttIPfSjh7iCeF8SBOFXpUfBJr9/exec'; 
-                
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            await signInAnonymously(auth);
+            db = getFirestore(app);
+
+            window.saveLeadToFirebase = async (leadData) => {
                 try {
-                    const response = await fetch(SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'cors', // Necessário para requisições entre domínios diferentes
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(leadData)
-                    });
-
-                    const result = await response.json();
-                    if(result.status === "success") {
-                         console.log("Lead enviado para Google Sheets com sucesso!", result.message);
-                    } else {
-                        throw new Error(result.message);
-                    }
-                } catch (error) {
-                    console.error('Erro ao enviar dados para o Google Sheets:', error);
-                    // Opcional: Adicionar uma mensagem de erro no chat para o usuário
-                }
-            }
-
-
-            const { jsPDF } = window.jspdf;
-            const chatMessages = document.getElementById('chat-messages');
-            const chatForm = document.getElementById('chat-form');
-            const userInput = document.getElementById('user-input');
-            const quickRepliesContainer = document.getElementById('quick-replies');
-            const chatSection = document.getElementById('chat-section');
-            const validationDiv = document.getElementById('validation-message');
-            const startChatBtns = document.querySelectorAll('.start-chat-btn');
-
-            let currentStageIndex = -1;
-            const userData = {};
-
-            const conversationFlow = [
-                { message: "Que bom te ver por aqui! Sou a LuzIA, sua guia virtual. Estou aqui para te inscrever em nosso encontro sobre Ferramentas de IA para Líderes e Igrejas, que acontecerá no dia <b>11 de Agosto, às 20h</b>, na <b>Igreja Batista da Manhã</b> e também com <b>transmissão online</b>.", delay: 1000 },
-                { message: "Para começarmos, como posso te chamar?", input: 'text', dataKey: 'name', validation: 'required' },
-                { message: (data) => `Prazer, ${data.name}! Para qual e-mail devo enviar o link de acesso exclusivo do nosso encontro?`, input: 'email', dataKey: 'email', validation: 'email' },
-                { message: "Ótimo! E qual o seu número de WhatsApp com DDD? Usaremos para enviar um lembrete no dia do evento.", input: 'tel', dataKey: 'whatsapp', validation: 'phone' },
-                { message: "Obrigado! Para que nosso encontro seja ainda mais relevante, qual sua principal área de atuação na igreja?", input: 'buttons', options: ['Pastor(a)', 'Líder de Ministério', 'Voluntário(a)', 'Membro', 'Outros'], dataKey: 'role' },
-                { message: "Entendido. E qual o maior desafio que você enfrenta nessa área hoje?", input: 'text', dataKey: 'challenge', validation: 'required' },
-                { message: (data) => `Compreendo. E para finalizar, qual é o principal obstáculo que te impede de superar o desafio de "${data.challenge}"? (Ex: falta de voluntários, orçamento, conhecimento técnico, etc.)`, input: 'text', dataKey: 'obstacle', validation: 'required' },
-                { message: (data) => `Perfeito, ${data.name}! Sua inscrição está confirmada. O link será enviado para o seu e-mail. Para te ajudar a não esquecer, que tal adicionar ao seu calendário?`, action: showCalendarButtonsAndSaveLead },
-                { message: "Excelente! Enquanto você decide, já estou preparando um conteúdo especial para você com base no seu desafio. Um momento...", delay: 2000, action: generateIdeas, isFinalMessage: true }
-            ];
-
-            function addMessage(text, sender = 'candeia') {
-                const messageElement = document.createElement('div');
-                messageElement.className = `w-fit max-w-xs md:max-w-md p-4 rounded-2xl break-words ${sender === 'user' ? 'message-user self-end rounded-br-lg' : 'message-candeia self-start rounded-bl-lg'}`;
-                const proseContainer = document.createElement('div');
-                proseContainer.className = 'prose prose-sm max-w-none';
-                proseContainer.innerHTML = text;
-                messageElement.appendChild(proseContainer);
-                chatMessages.appendChild(messageElement);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }
-
-            function showTypingIndicator() {
-                const typingElement = document.createElement('div');
-                typingElement.id = 'typing-indicator';
-                typingElement.className = 'message-candeia self-start p-3 rounded-2xl';
-                typingElement.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
-                chatMessages.appendChild(typingElement);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-                return typingElement;
-            }
-
-            function removeTypingIndicator(indicator) {
-                if (indicator && indicator.parentNode) {
-                    chatMessages.removeChild(indicator);
-                }
-            }
-
-            async function advanceConversation(userInputText = null) {
-                const currentStep = conversationFlow[currentStageIndex];
-                if (userInputText && currentStep && currentStep.dataKey) {
-                    if (currentStep.validation && !validateInput(userInputText, currentStep.validation)) {
-                        return; 
-                    }
-                    userData[currentStep.dataKey] = userInputText;
-                }
-
-                currentStageIndex++;
-                const nextStep = conversationFlow[currentStageIndex];
-
-                if (!nextStep) {
-                    userInput.disabled = true;
-                    return;
-                }
-
-                const typingIndicator = showTypingIndicator();
-                await new Promise(resolve => setTimeout(resolve, nextStep.delay || 1200));
-                removeTypingIndicator(typingIndicator);
-
-                if (nextStep.message) {
-                    const messageText = typeof nextStep.message === 'function' ? nextStep.message(userData) : nextStep.message;
-                    addMessage(messageText);
-                }
-
-                if (nextStep.action) await nextStep.action();
-                if (nextStep.input) setupInput(nextStep);
-                else if (currentStageIndex < conversationFlow.length - 1 && !nextStep.isFinalMessage) await advanceConversation();
-                else userInput.disabled = true;
-            }
+                    const docRef = await addDoc(collection(db, "leads-hangout-ia"), { ...leadData, timestamp: serverTimestamp() });
+                    console.log("Lead salvo no Firebase com o ID: ", docRef.id);
+                } catch (e) { console.error("Erro ao salvar o lead no Firebase: ", e); }
+            };
+        } catch (error) {
+            console.error("Falha ao inicializar o Firebase.", error);
+            window.saveLeadToFirebase = (leadData) => console.log("Firebase não configurado. Dados:", leadData);
+        }
+        
+        // ERRO 2 CORRIGIDO
+        async function sendDataToGoogleSheet(leadData) {
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxuvRLxvuwBBk4XEDxUlsWCoRQay06sHS2AThe35pttIPfSjh7iCeF8SBOFXpUfBJr9/exec'; 
             
-            function showValidationMessage(message, isError = true) {
-                validationDiv.innerHTML = `<p class="${isError ? 'error-message' : 'text-green-600'}">${message}</p>`;
-                setTimeout(() => validationDiv.innerHTML = '', 3000);
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(leadData)
+                });
+
+                const result = await response.json();
+                if(result.status === "success") {
+                     console.log("Lead enviado para Google Sheets com sucesso!", result.message);
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('Erro ao enviar dados para o Google Sheets:', error);
+            }
+        }
+
+
+        const { jsPDF } = window.jspdf;
+        const chatMessages = document.getElementById('chat-messages');
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const quickRepliesContainer = document.getElementById('quick-replies');
+        const chatSection = document.getElementById('chat-section');
+        const validationDiv = document.getElementById('validation-message');
+        const startChatBtns = document.querySelectorAll('.start-chat-btn');
+
+        let currentStageIndex = -1;
+        const userData = {};
+
+        const conversationFlow = [
+            { message: "Que bom te ver por aqui! Sou a LuzIA, sua guia virtual. Estou aqui para te inscrever em nosso encontro sobre Ferramentas de IA para Líderes e Igrejas, que acontecerá no dia <b>11 de Agosto, às 20h</b>, na <b>Igreja Batista da Manhã</b> e também com <b>transmissão online</b>.", delay: 1000 },
+            { message: "Para começarmos, como posso te chamar?", input: 'text', dataKey: 'name', validation: 'required' },
+            { message: (data) => `Prazer, ${data.name}! Para qual e-mail devo enviar o link de acesso exclusivo do nosso encontro?`, input: 'email', dataKey: 'email', validation: 'email' },
+            { message: "Ótimo! E qual o seu número de WhatsApp com DDD? Usaremos para enviar um lembrete no dia do evento.", input: 'tel', dataKey: 'whatsapp', validation: 'phone' },
+            { message: "Obrigado! Para que nosso encontro seja ainda mais relevante, qual sua principal área de atuação na igreja?", input: 'buttons', options: ['Pastor(a)', 'Líder de Ministério', 'Voluntário(a)', 'Membro', 'Outros'], dataKey: 'role' },
+            { message: "Entendido. E qual o maior desafio que você enfrenta nessa área hoje?", input: 'text', dataKey: 'challenge', validation: 'required' },
+            { message: (data) => `Compreendo. E para finalizar, qual é o principal obstáculo que te impede de superar o desafio de "${data.challenge}"? (Ex: falta de voluntários, orçamento, conhecimento técnico, etc.)`, input: 'text', dataKey: 'obstacle', validation: 'required' },
+            { message: (data) => `Perfeito, ${data.name}! Sua inscrição está confirmada. O link será enviado para o seu e-mail. Para te ajudar a não esquecer, que tal adicionar ao seu calendário?`, action: showCalendarButtonsAndSaveLead },
+            { message: "Excelente! Enquanto você decide, já estou preparando um conteúdo especial para você com base no seu desafio. Um momento...", delay: 2000, action: generateIdeas, isFinalMessage: true }
+        ];
+
+        function addMessage(text, sender = 'candeia') {
+            const messageElement = document.createElement('div');
+            messageElement.className = `w-fit max-w-xs md:max-w-md p-4 rounded-2xl break-words ${sender === 'user' ? 'message-user self-end rounded-br-lg' : 'message-candeia self-start rounded-bl-lg'}`;
+            const proseContainer = document.createElement('div');
+            proseContainer.className = 'prose prose-sm max-w-none';
+            proseContainer.innerHTML = text;
+            messageElement.appendChild(proseContainer);
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const typingElement = document.createElement('div');
+            typingElement.id = 'typing-indicator';
+            typingElement.className = 'message-candeia self-start p-3 rounded-2xl';
+            typingElement.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
+            chatMessages.appendChild(typingElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return typingElement;
+        }
+
+        function removeTypingIndicator(indicator) {
+            if (indicator && indicator.parentNode) {
+                chatMessages.removeChild(indicator);
+            }
+        }
+
+        async function advanceConversation(userInputText = null) {
+            const currentStep = conversationFlow[currentStageIndex];
+            if (userInputText && currentStep && currentStep.dataKey) {
+                if (currentStep.validation && !validateInput(userInputText, currentStep.validation)) {
+                    return; 
+                }
+                userData[currentStep.dataKey] = userInputText;
             }
 
-            function validateInput(value, type) {
-                let isValid = true;
-                let message = '';
-                if (type === 'required' && !value.trim()) {
-                    isValid = false;
-                    message = 'Este campo é obrigatório.';
-                } else if (type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-                    isValid = false;
-                    message = 'Por favor, insira um e-mail válido.';
-                } else if (type === 'phone' && !/^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/.test(value)) {
-                    isValid = false;
-                    message = 'Formato de telefone inválido. Use (XX) XXXXX-XXXX.';
-                }
-                if (!isValid) {
-                    showValidationMessage(message);
-                    setupInput(conversationFlow[currentStageIndex]);
-                }
-                return isValid;
-            }
+            currentStageIndex++;
+            const nextStep = conversationFlow[currentStageIndex];
 
-            function setupInput(step) {
-                quickRepliesContainer.innerHTML = '';
-                userInput.style.display = 'flex';
-                chatForm.querySelector('button').style.display = 'flex';
+            if (!nextStep) {
                 userInput.disabled = true;
-
-                switch (step.input) {
-                    case 'text':
-                    case 'email':
-                    case 'tel':
-                        userInput.type = step.input;
-                        userInput.placeholder = "Sua resposta...";
-                        userInput.disabled = false;
-                        userInput.focus();
-                        break;
-                    case 'buttons':
-                        userInput.placeholder = "Escolha uma das opções acima";
-                        step.options.forEach(option => {
-                            const button = document.createElement('button');
-                            button.className = 'px-4 py-2 bg-white border border-[#D46A25] text-[#D46A25] rounded-full hover:bg-[#FFF8F5] transition';
-                            button.textContent = option;
-                            button.onclick = () => handleQuickReply(option);
-                            quickRepliesContainer.appendChild(button);
-                        });
-                        break;
-                }
+                return;
             }
 
-            function handleUserInput(e) {
-                e.preventDefault();
-                const text = userInput.value.trim();
-                if (!text) return;
+            const typingIndicator = showTypingIndicator();
+            await new Promise(resolve => setTimeout(resolve, nextStep.delay || 1200));
+            removeTypingIndicator(typingIndicator);
 
-                addMessage(text, 'user');
-                userInput.value = '';
-                userInput.disabled = true;
-                
+            if (nextStep.message) {
+                const messageText = typeof nextStep.message === 'function' ? nextStep.message(userData) : nextStep.message;
+                addMessage(messageText);
+            }
+
+            if (nextStep.action) await nextStep.action();
+            if (nextStep.input) setupInput(nextStep);
+            else if (currentStageIndex < conversationFlow.length - 1 && !nextStep.isFinalMessage) await advanceConversation();
+            else userInput.disabled = true;
+        }
+        
+        function showValidationMessage(message, isError = true) {
+            validationDiv.innerHTML = `<p class="${isError ? 'error-message' : 'text-green-600'}">${message}</p>`;
+            setTimeout(() => validationDiv.innerHTML = '', 3000);
+        }
+
+        function validateInput(value, type) {
+            let isValid = true;
+            let message = '';
+            if (type === 'required' && !value.trim()) {
+                isValid = false;
+                message = 'Este campo é obrigatório.';
+            } else if (type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                isValid = false;
+                message = 'Por favor, insira um e-mail válido.';
+            } else if (type === 'phone' && !/^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/.test(value)) {
+                isValid = false;
+                message = 'Formato de telefone inválido. Use (XX) XXXXX-XXXX.';
+            }
+            if (!isValid) {
+                showValidationMessage(message);
+                setupInput(conversationFlow[currentStageIndex]);
+            }
+            return isValid;
+        }
+
+        function setupInput(step) {
+            quickRepliesContainer.innerHTML = '';
+            userInput.style.display = 'flex';
+            chatForm.querySelector('button').style.display = 'flex';
+            userInput.disabled = true;
+
+            switch (step.input) {
+                case 'text':
+                case 'email':
+                case 'tel':
+                    userInput.type = step.input;
+                    userInput.placeholder = "Sua resposta...";
+                    userInput.disabled = false;
+                    userInput.focus();
+                    break;
+                case 'buttons':
+                    userInput.placeholder = "Escolha uma das opções acima";
+                    step.options.forEach(option => {
+                        const button = document.createElement('button');
+                        button.className = 'px-4 py-2 bg-white border border-[#D46A25] text-[#D46A25] rounded-full hover:bg-[#FFF8F5] transition';
+                        button.textContent = option;
+                        button.onclick = () => handleQuickReply(option);
+                        quickRepliesContainer.appendChild(button);
+                    });
+                    break;
+            }
+        }
+
+        function handleUserInput(e) {
+            e.preventDefault();
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            addMessage(text, 'user');
+            userInput.value = '';
+            userInput.disabled = true;
+            
+            advanceConversation(text);
+        }
+
+        async function handleQuickReply(text) {
+            addMessage(text, 'user');
+            quickRepliesContainer.innerHTML = '';
+
+            if (text === 'Outros') {
+                const typingIndicator = showTypingIndicator();
+                await new Promise(resolve => setTimeout(resolve, 800));
+                removeTypingIndicator(typingIndicator);
+                addMessage("Entendido. Por favor, digite sua área de atuação abaixo.");
+                setupInput({ input: 'text', placeholder: 'Sua atuação...' });
+            } else {
                 advanceConversation(text);
             }
-
-            async function handleQuickReply(text) {
-                addMessage(text, 'user');
-                quickRepliesContainer.innerHTML = '';
-
-                if (text === 'Outros') {
-                    const typingIndicator = showTypingIndicator();
-                    await new Promise(resolve => setTimeout(resolve, 800));
-                    removeTypingIndicator(typingIndicator);
-                    addMessage("Entendido. Por favor, digite sua área de atuação abaixo.");
-                    setupInput({ input: 'text', placeholder: 'Sua atuação...' });
-                } else {
-                    advanceConversation(text);
-                }
-            }
+        }
+        
+        function createCalendarLink(type) {
+            const eventDate = new Date('2025-08-11T20:00:00-03:00');
+            const event = {
+                title: 'Hangout: IA para Igrejas',
+                startDate: eventDate,
+                description: 'Descubra como a Inteligência Artificial pode transformar sua igreja. Presencial na Igreja Batista da Manhã e online (link de acesso será enviado por e-mail).',
+                location: 'Igreja Batista da Manhã & Online'
+            };
             
-            function createCalendarLink(type) {
-                const eventDate = new Date('2025-08-11T20:00:00-03:00');
-                const event = {
-                    title: 'Hangout: IA para Igrejas',
-                    startDate: eventDate,
-                    description: 'Descubra como a Inteligência Artificial pode transformar sua igreja. Presencial na Igreja Batista da Manhã e online (link de acesso será enviado por e-mail).',
-                    location: 'Igreja Batista da Manhã & Online'
-                };
-                
-                const pad = (n) => n.toString().padStart(2, '0');
-                const formatTimeUTC = (date) => `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}00Z`;
-                const startTime = formatTimeUTC(event.startDate);
-                const endTime = formatTimeUTC(new Date(event.startDate.getTime() + 60 * 60 * 1000));
+            const pad = (n) => n.toString().padStart(2, '0');
+            const formatTimeUTC = (date) => `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}00Z`;
+            const startTime = formatTimeUTC(event.startDate);
+            const endTime = formatTimeUTC(new Date(event.startDate.getTime() + 60 * 60 * 1000));
 
-                if (type === 'google') {
-                    return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${startTime}/${endTime}&details=${encodeURIComponent(event.description)}&location=${encodeURIComponent(event.location)}`;
-                } else { 
-                    let icsBody = [
-                        'BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT',
-                        `URL:${document.URL}`, `DTSTART:${startTime}`, `DTEND:${endTime}`,
-                        `SUMMARY:${event.title}`, `DESCRIPTION:${event.description}`, `LOCATION:${event.location}`,
-                        'END:VEVENT', 'END:VCALENDAR'
-                    ].join('\r\n');
-                    return `data:text/calendar;charset=utf8,${encodeURIComponent(icsBody)}`;
-                }
+            if (type === 'google') {
+                return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${startTime}/${endTime}&details=${encodeURIComponent(event.description)}&location=${encodeURIComponent(event.location)}`;
+            } else { 
+                let icsBody = [
+                    'BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT',
+                    `URL:${document.URL}`, `DTSTART:${startTime}`, `DTEND:${endTime}`,
+                    `SUMMARY:${event.title}`, `DESCRIPTION:${event.description}`, `LOCATION:${event.location}`,
+                    'END:VEVENT', 'END:VCALENDAR'
+                ].join('\r\n');
+                return `data:text/calendar;charset=utf8,${encodeURIComponent(icsBody)}`;
             }
+        }
 
-            async function showCalendarButtonsAndSaveLead() {
-                // await sendDataToGoogleSheet(userData); // Primeiro envia para o Google Sheets
-                await window.saveLeadToFirebase(userData); // Depois (ou em paralelo) para o Firebase
+        async function showCalendarButtonsAndSaveLead() {
+            await sendDataToGoogleSheet(userData);
+            await window.saveLeadToFirebase(userData); 
+            
+            userInput.style.display = 'none';
+            chatForm.querySelector('button').style.display = 'none';
+
+            const googleLink = createCalendarLink('google');
+            const appleLink = createCalendarLink('apple');
+            
+            const calendarButtons = document.createElement('div');
+            calendarButtons.className = 'flex flex-wrap justify-center gap-2';
+            
+            const linkGoogle = document.createElement('a');
+            linkGoogle.href = googleLink;
+            linkGoogle.target = '_blank';
+            linkGoogle.className = 'calendar-button google';
+            linkGoogle.textContent = 'Adicionar ao Google Agenda';
+            
+            const linkApple = document.createElement('a');
+            linkApple.href = appleLink;
+            linkApple.download = 'evento-hangout-ia.ics';
+            linkApple.className = 'calendar-button apple';
+            linkApple.textContent = 'Adicionar ao Calendário Apple';
+
+            calendarButtons.appendChild(linkGoogle);
+            calendarButtons.appendChild(linkApple);
+            
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message-candeia self-start rounded-bl-lg p-4';
+            messageElement.appendChild(calendarButtons);
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function generateIdeas() {
+            const typingIndicator = showTypingIndicator();
+            const prompt = `Aja como um especialista em inovação para igrejas com profundo conhecimento teológico. Dirija-se diretamente à pessoa pelo nome e cargo dela. O nome é "${userData.name}" e o cargo é "${userData.role}". Comece a resposta de forma pessoal e informal, por exemplo: "${userData.role} ${userData.name}, compreendo profundamente o desafio de...".
+
+            O desafio principal é "${userData.challenge}" e o obstáculo é "${userData.obstacle}". Com base nisso, crie UMA ÚNICA solução prática e detalhada.
+
+            **Regra Inviolável:** A solução DEVE estar em total acordo com os princípios da Bíblia Sagrada. Se possível, inclua embasamento bíblico com versículos relevantes. A solução não pode, sob nenhuma circunstância, contradizer as Escrituras.
+
+            **Formato da Resposta:** Sua resposta DEVE ser dividida em duas partes, separadas por '---PDF---'.
+
+            **PARTE 1 (Para o Chat):** Um texto formatado em Markdown com um título (###), uma introdução curta e pessoal (usando o nome e cargo), e uma lista de tópicos principais (* Tópico).
+
+            **PARTE 2 (Para o PDF):** O texto completo e detalhado da solução. **Formate-o de maneira clara e organizada**, com um título principal (#), subtítulos (##), parágrafos curtos e, onde aplicável, listas de itens e citações bíblicas. Evite blocos de texto muito longos e densos.`;
+
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            // ERRO 3 CORRIGIDO
+            const apiKey = "SUA_API_KEY_DO_GEMINI_AQUI"; // SUBSTITUA PELA SUA CHAVE
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+
+                const result = await response.json();
                 
-                userInput.style.display = 'none';
-                chatForm.querySelector('button').style.display = 'none';
-
-                const googleLink = createCalendarLink('google');
-                const appleLink = createCalendarLink('apple');
-                
-                const calendarButtons = document.createElement('div');
-                calendarButtons.className = 'flex flex-wrap justify-center gap-2';
-                
-                const linkGoogle = document.createElement('a');
-                linkGoogle.href = googleLink;
-                linkGoogle.target = '_blank';
-                linkGoogle.className = 'calendar-button google';
-                linkGoogle.textContent = 'Adicionar ao Google Agenda';
-                
-                const linkApple = document.createElement('a');
-                linkApple.href = appleLink;
-                linkApple.download = 'evento-hangout-ia.ics';
-                linkApple.className = 'calendar-button apple';
-                linkApple.textContent = 'Adicionar ao Calendário Apple';
-
-                calendarButtons.appendChild(linkGoogle);
-                calendarButtons.appendChild(linkApple);
-                
-                const messageElement = document.createElement('div');
-                messageElement.className = 'message-candeia self-start rounded-bl-lg p-4';
-                messageElement.appendChild(calendarButtons);
-                chatMessages.appendChild(messageElement);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }
-
-            async function generateIdeas() {
-                const typingIndicator = showTypingIndicator();
-                const prompt = `Aja como um especialista em inovação para igrejas com profundo conhecimento teológico. Dirija-se diretamente à pessoa pelo nome e cargo dela. O nome é "${userData.name}" e o cargo é "${userData.role}". Comece a resposta de forma pessoal e informal, por exemplo: "${userData.role} ${userData.name}, compreendo profundamente o desafio de...".
-
-                O desafio principal é "${userData.challenge}" e o obstáculo é "${userData.obstacle}". Com base nisso, crie UMA ÚNICA solução prática e detalhada.
-
-                **Regra Inviolável:** A solução DEVE estar em total acordo com os princípios da Bíblia Sagrada. Se possível, inclua embasamento bíblico com versículos relevantes. A solução não pode, sob nenhuma circunstância, contradizer as Escrituras.
-
-                **Formato da Resposta:** Sua resposta DEVE ser dividida em duas partes, separadas por '---PDF---'.
-
-                **PARTE 1 (Para o Chat):** Um texto formatado em Markdown com um título (###), uma introdução curta e pessoal (usando o nome e cargo), e uma lista de tópicos principais (* Tópico).
-
-                **PARTE 2 (Para o PDF):** O texto completo e detalhado da solução. **Formate-o de maneira clara e organizada**, com um título principal (#), subtítulos (##), parágrafos curtos e, onde aplicável, listas de itens e citações bíblicas. Evite blocos de texto muito longos e densos.`;
-
-                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-                // const apiKey = "AIzaSyC6CSfCH7z1IUP2Dxhvp95ah8HDw6GZics"; // const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (!response.ok) throw new Error(`API error: ${response.statusText}`);
-
-                    const result = await response.json();
+                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0].text) {
+                    const fullText = result.candidates[0].content.parts[0].text;
+                    const parts = fullText.split('---PDF---');
                     
-                    if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0].text) {
-                        const fullText = result.candidates[0].content.parts[0].text;
-                        const parts = fullText.split('---PDF---');
-                        
-                        if (parts.length < 2) {
-                            addMessage("Peço desculpas, tive um problema para formatar a solução em PDF. Mas aqui está a sugestão completa:<br><br>" + fullText.replace(/\n/g, '<br>'));
-                        } else {
-                            const chatContent = parts[0].trim().replace(/### (.*)/g, '<h3>$1</h3>').replace(/\* (.*)/g, '<li>$1</li>').replace(/\n/g, '<br>');
-                            const pdfMarkdown = parts[1].trim();
-                            addMessage(chatContent);
+                    if (parts.length < 2) {
+                        addMessage("Peço desculpas, tive um problema para formatar a solução em PDF. Mas aqui está a sugestão completa:<br><br>" + fullText.replace(/\n/g, '<br>'));
+                    } else {
+                        const chatContent = parts[0].trim().replace(/### (.*)/g, '<h3>$1</h3>').replace(/\* (.*)/g, '<li>$1</li>').replace(/\n/g, '<br>');
+                        const pdfMarkdown = parts[1].trim();
+                        addMessage(chatContent);
 
-                            const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-                            const lines = pdfMarkdown.split('\n');
-                            let cursorY = 60; // Increased top margin
-                            const pageMargin = 60; // Increased side margins
-                            const pageWidth = doc.internal.pageSize.getWidth() - (pageMargin * 2);
+                        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+                        const lines = pdfMarkdown.split('\n');
+                        let cursorY = 60;
+                        const pageMargin = 60;
+                        const pageWidth = doc.internal.pageSize.getWidth() - (pageMargin * 2);
 
-                            lines.forEach(line => {
-                                if (line.trim() === '') { cursorY += 10; return; }
-                                if (cursorY > doc.internal.pageSize.getHeight() - 60) { doc.addPage(); cursorY = pageMargin; }
+                        lines.forEach(line => {
+                            if (line.trim() === '') { cursorY += 10; return; }
+                            if (cursorY > doc.internal.pageSize.getHeight() - 60) { doc.addPage(); cursorY = pageMargin; }
 
-                                if (line.startsWith('# ')) {
-                                    doc.setFont('helvetica', 'bold'); doc.setFontSize(18);
-                                    const text = doc.splitTextToSize(line.substring(2), pageWidth);
-                                    doc.text(text, pageMargin, cursorY);
-                                    cursorY += (text.length * 18) + 12;
-                                } else if (line.startsWith('## ')) {
-                                    doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
-                                    const text = doc.splitTextToSize(line.substring(3), pageWidth);
-                                    doc.text(text, pageMargin, cursorY);
-                                    cursorY += (text.length * 14) + 10;
-                                } else {
-                                    doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
-                                    const text = doc.splitTextToSize(line, pageWidth);
-                                    doc.text(text, pageMargin, cursorY);
-                                    cursorY += (text.length * 11) + 4;
-                                }
-                            });
-
-                            const pageCount = doc.internal.getNumberOfPages();
-                            for(let i = 1; i <= pageCount; i++) {
-                                doc.setPage(i);
-                                doc.setFontSize(9); doc.setTextColor(150);
-                                doc.text(`Solução gerada pela LuzIA para ${userData.name}`, pageMargin, doc.internal.pageSize.getHeight() - 20);
-                                doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.getWidth() - pageMargin - 30, doc.internal.pageSize.getHeight() - 20);
+                            if (line.startsWith('# ')) {
+                                doc.setFont('helvetica', 'bold'); doc.setFontSize(18);
+                                const text = doc.splitTextToSize(line.substring(2), pageWidth);
+                                doc.text(text, pageMargin, cursorY);
+                                cursorY += (text.length * 18) + 12;
+                            } else if (line.startsWith('## ')) {
+                                doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
+                                const text = doc.splitTextToSize(line.substring(3), pageWidth);
+                                doc.text(text, pageMargin, cursorY);
+                                cursorY += (text.length * 14) + 10;
+                            } else {
+                                doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+                                const text = doc.splitTextToSize(line, pageWidth);
+                                doc.text(text, pageMargin, cursorY);
+                                cursorY += (text.length * 11) + 4;
                             }
+                        });
 
-                            const pdfDataUri = doc.output('datauristring');
-                            const pdfLinkMessage = `O conteúdo completo e detalhado já está disponível para você em PDF. Clique para baixar!<br><a href="${pdfDataUri}" download="solucao_personalizada_luzia.pdf" class="pdf-link">Baixar PDF da Solução</a>`;
-                            await new Promise(resolve => setTimeout(resolve, 1200));
-                            addMessage(pdfLinkMessage);
+                        const pageCount = doc.internal.getNumberOfPages();
+                        for(let i = 1; i <= pageCount; i++) {
+                            doc.setPage(i);
+                            doc.setFontSize(9); doc.setTextColor(150);
+                            doc.text(`Solução gerada pela LuzIA para ${userData.name}`, pageMargin, doc.internal.pageSize.getHeight() - 20);
+                            doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.getWidth() - pageMargin - 30, doc.internal.pageSize.getHeight() - 20);
                         }
+
+                        const pdfDataUri = doc.output('datauristring');
+                        const pdfLinkMessage = `O conteúdo completo e detalhado já está disponível para você em PDF. Clique para baixar!<br><a href="${pdfDataUri}" download="solucao_personalizada_luzia.pdf" class="pdf-link">Baixar PDF da Solução</a>`;
+                        await new Promise(resolve => setTimeout(resolve, 1200));
+                        addMessage(pdfLinkMessage);
                     }
-                } catch (error) {
-                    console.error("Error fetching ideas:", error);
-                    addMessage("Desculpe, não consegui gerar a solução agora. Houve um problema de conexão. Por favor, tente mais tarde.");
-                } finally {
-                    removeTypingIndicator(typingIndicator);
-                    // }
+                }
+            } catch (error) {
+                console.error("Error fetching ideas:", error);
+                addMessage("Desculpe, não consegui gerar a solução agora. Houve um problema de conexão. Por favor, tente mais tarde.");
+            } finally {
+                removeTypingIndicator(typingIndicator);
             }
+        }
 
-            chatForm.addEventListener('submit', handleUserInput);
+        chatForm.addEventListener('submit', handleUserInput);
 
-            startChatBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    chatSection.style.display = 'block';
-                    chatSection.scrollIntoView({ behavior: 'smooth' });
-                    if (currentStageIndex === -1) {
-                       advanceConversation();
-                    }
-                });
-            });
-            
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('is-visible');
-                    }
-                });
-            }, { threshold: 0.1 });
-
-            document.querySelectorAll('.fade-in-section').forEach(section => {
-                observer.observe(section);
+        startChatBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                chatSection.style.display = 'block';
+                chatSection.scrollIntoView({ behavior: 'smooth' });
+                if (currentStageIndex === -1) {
+                   advanceConversation();
+                }
             });
         });
-    </script>
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.fade-in-section').forEach(section => {
+            observer.observe(section);
+        });
+    });
+</script>
 </body>
 </html>
