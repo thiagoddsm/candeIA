@@ -1,0 +1,10 @@
+{
+  "placeholderImages": [
+    {
+      "id": "candeia-logo",
+      "description": "Candeia logo, a stylized flame.",
+      "imageUrl": "https://storage.googleapis.com/aifire.appspot.com/candeia-logo.png",
+      "imageHint": "flame logo"
+    }
+  ]
+}
